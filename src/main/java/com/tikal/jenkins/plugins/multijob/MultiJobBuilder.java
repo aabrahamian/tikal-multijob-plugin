@@ -415,7 +415,14 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
                 }
             } else {
                 AbstractBuild jobBuild = subTask.subJob.getBuildByNumber(subBuild.getBuildNumber());
-                updateSubBuild(multiJobBuild, thisProject, jobBuild, subBuild.getResult(), subBuild.getJobAlias());
+                Result resultToUse;
+                if (!subTask.phaseConfig.isPretendSuccess()) {
+                    resultToUse = subBuild.getResult();
+                } else {
+                    listener.getLogger().println("Going to pretend success (instead of " + subBuild.getResult() +") for the subBuild.result of " + subTask.subJob.getDisplayName());
+                    resultToUse = Result.SUCCESS;
+                }
+                updateSubBuild(multiJobBuild, thisProject, jobBuild, resultToUse, subBuild.getJobAlias());
             }
         }
 
@@ -427,8 +434,16 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
                 if (subTask != null) {
                     resultCounter++;
                     if (subTask.result != null) {
-                        jobResults.add(subTask.result);
-                        phaseCounters.process(subTask.result);
+                         //Possibly change the result to success if the pretendSuccess config was set
+                        Result resultToUse;
+                        if (!subTask.phaseConfig.isPretendSuccess()) {
+                            resultToUse = subTask.result;
+                        } else {
+                            listener.getLogger().println("Going to pretend success (instead of " + subTask.result +") for the subTask.result of " + subTask.subJob.getDisplayName());
+                            resultToUse = Result.SUCCESS;
+                        }
+                        jobResults.add(resultToUse);
+                        phaseCounters.process(resultToUse);
                         checkPhaseTermination(subTask, subTasks, listener);
                     }
                 }
@@ -536,31 +551,39 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
                         result = jobBuild.getResult();
                         reportFinish(listener, jobBuild, result, subTask.phaseConfig);
 
+                        Result resultToUse;
+                        if (!subTask.phaseConfig.isPretendSuccess()) {
+                            resultToUse = result;
+                        } else {
+                            listener.getLogger().println("Going to pretend success (instead of " + result +") for the result of " + subTask.subJob.getDisplayName());
+                            resultToUse = Result.SUCCESS;
+                        }
+
                         if (result.isWorseOrEqualTo(Result.UNSTABLE) && result.isCompleteBuild() && subTask.phaseConfig.getEnableRetryStrategy()) {
                             if (isKnownRandomFailure(jobBuild)) {
                                 if (retry <= maxRetries) {
                                     listener.getLogger().println("Known failure detected, retrying this build. Try " + retry + " of " + maxRetries + ".");
-                                    updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, result, true, subTask.phaseConfig.getJobAlias());
+                                    updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, resultToUse, true, subTask.phaseConfig.getJobAlias());
 
                                     subTask.generateFuture();
                                 } else {
                                     listener.getLogger().println("Known failure detected, max retries (" + maxRetries + ") exceeded.");
-                                    updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, result, subTask.phaseConfig.getJobAlias());
+                                    updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, resultToUse, subTask.phaseConfig.getJobAlias());
                                 }
                             } else {
                                 listener.getLogger().println("Failed the build, the failure doesn't match the rules.");
-                                updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, result, subTask.phaseConfig.getJobAlias());
+                                updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, resultToUse, subTask.phaseConfig.getJobAlias());
                                 finish = true;
                             }
                         } else {
-                            updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, result, subTask.phaseConfig.getJobAlias());
+                            updateSubBuild(subTask.multiJobBuild, multiJobProject, jobBuild, resultToUse, subTask.phaseConfig.getJobAlias());
                             finish = true;
                         }
 
                         ChangeLogSet<Entry> changeLogSet = jobBuild.getChangeSet();
                         subTask.multiJobBuild.addChangeLogSet(changeLogSet);
                         addBuildEnvironmentVariables(subTask.multiJobBuild, jobBuild, listener);
-                        subTask.result = result;
+                        subTask.result = resultToUse;
                     }
                 }
 
@@ -715,6 +738,10 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
 
     protected boolean checkPhaseTermination(SubTask subTask, List<SubTask> subTasks, final BuildListener listener) {
         try {
+            if (subTask.phaseConfig.isPretendSuccess()) {
+                listener.getLogger().println("Pretend success is enabled for" + subTask.subJob.getDisplayName() + "; not going to terminate phase");
+                return false;
+            }
             KillPhaseOnJobResultCondition killCondition = subTask.phaseConfig.getKillPhaseOnJobResultCondition();
             if (killCondition.equals(KillPhaseOnJobResultCondition.NEVER) && subTask.result != Result.ABORTED) {
                 return false;
