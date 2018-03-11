@@ -84,5 +84,22 @@
 				<j:set var="indent" value="${oldIndent}"/>
 			</j:when>
 		</j:choose>
+		<j:choose>
+            <j:when test="${builder.isMatrixJob()}">
+                <j:set var="oldLastPhase" value="${lastPhase}"/>
+                <j:set var="oldBuilders" value="${builders}"/>
+                <j:set var="oldIndent" value="${indent}"/>
+
+                <j:set var="lastPhase" value=""/>
+                <j:set var="builders" value="${builder.build.getExactRuns()}"/>
+                <j:set var="indent" value="${indent + 2}"/>
+
+                <st:include page="matrix.jelly" />
+
+                <j:set var="lastPhase" value="${oldLastPhase}"/>
+                <j:set var="builders" value="${oldLastBuilders}"/>
+                <j:set var="indent" value="${oldIndent}"/>
+            </j:when>
+        </j:choose>
 	</j:forEach>
 </j:jelly>

@@ -340,5 +340,16 @@ public class MultiJobBuild extends Build<MultiJobProject, MultiJobBuild> {
             }
             return false;
         }
+
+        @Exported
+        public boolean isMatrixJob() {
+            if (buildID != null) {
+                Run<?, ?> build = Run.fromExternalizableId(buildID);
+                if (build instanceof hudson.matrix.MatrixBuild) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 }

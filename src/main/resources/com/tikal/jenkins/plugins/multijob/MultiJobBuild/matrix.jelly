@@ -1,0 +1,40 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define"
+	xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form"
+	xmlns:p="/lib/hudson/project">
+
+	<j:forEach var="matrixRun" items="${builders}">
+        <tr>
+            <td class="no-wrap" align="center" width="28px">
+                <span class="job"><img src="${imagesURL}/24x24/${matrixRun.getIconColor().getImage()}" alt=""/></span>
+            </td>
+            <td class="no-wrap" align="center" width="24px"></td>
+            <td class="no-wrap" style="padding-left:${indent * 20}px" width="70%">
+                <a href="${rootURL}/${matrixRun.url}">
+                    ${matrixRun.getParent().getCombination().toCompactString(matrixRun.getParent().getParent().getAxes())}
+                </a>
+            </td>
+            <td class="no-wrap">
+                <j:choose>
+                    <j:when test="${matrixRun.url.length() > 0}">
+                        <a href="${rootURL}/${matrixRun.url}">
+                            build ${matrixRun.getDisplayName()}
+                        </a>
+                    </j:when>
+                </j:choose>
+            </td>
+            <td class="no-wrap">
+                <j:choose>
+                    <j:when test="${matrixRun.getDurationString() != null &amp;&amp; matrixRun.getDurationString().length() > 0}">
+                        ( ${matrixRun.getDurationString()} )
+                    </j:when>
+                </j:choose>
+            </td>
+            <td class="no-wrap" align="center">
+                <a href="${rootURL}/${matrixRun.url}console">
+                    <img src="${imagesURL}/24x24/terminal.png" alt="Console Output" />
+                </a>
+            </td>
+        </tr>
+    </j:forEach>
+</j:jelly>
