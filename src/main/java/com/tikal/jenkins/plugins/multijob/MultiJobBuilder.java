@@ -10,6 +10,8 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.console.HyperlinkNote;
+import hudson.matrix.MatrixBuild;
+import hudson.matrix.MatrixRun;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
@@ -684,6 +686,17 @@ public class MultiJobBuilder extends Builder implements DependecyDeclarer {
 
         private boolean isKnownRandomFailure(AbstractBuild build) throws InterruptedException {
             boolean failure = false;
+            if (build instanceof MatrixBuild) {
+                for (MatrixRun run: ((MatrixBuild) build).getExactRuns()) {
+                    boolean runResult = isKnownRandomFailure(run);
+                    if (runResult) {
+                        // if any of the matrix runs logs have a matching line, trigger a restart
+                        listener.getLogger().println("Found at least one known random failure in matrix build: " + run.getFullDisplayName() + ". Going to re-run the full set.");
+                        return true;
+                    }
+                }
+            }
+
             try {
                 final List<Pattern> patterns = getCompiledPattern();
                 final File logFile = build.getLogFile();

@@ -42,7 +42,7 @@
                 </f:entry>
                 <f:optionalBlock title="Enable retry" name="enableRetryStrategy" inline="true" checked="${instance.enableRetryStrategy}" help="/plugin/jenkins-multijob-plugin/help-retry.html">
                     <f:block>
-                        <f:entry title="Select strategy" field="currentRulePath" help="/plugin/jenkins-multijob-plugin/help-ParseRuleChoice.html">
+                        <f:entry title="Select strategy" field="currentRulePath" help="/plugin/jenkins-multijob-plugin/help-parseRuleChoice.html">
                             <select name="parsingRulesPath">
                                 <j:forEach var="i" items="${descriptor.parsingRulesGlobal}">
                                     <f:option selected="${i.path == instance.parsingRulesPath}" value="${i.path}">${i.name}</f:option>
